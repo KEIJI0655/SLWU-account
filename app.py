@@ -22,7 +22,7 @@ if api_key:
             full_text = "".join([page.get_text() for page in doc])
             
         if st.button("問題を5問作成する"):
-            model = genai.GenerativeModel('gemini-1.5-flash')
+           model = genai.GenerativeModel('models/gemini-1.5-flash')
             # AIへの具体的な指示
             prompt = f"""
             以下のテキストに基づいて、会社の試験対策用問題を5問作成してください。
