@@ -2,48 +2,37 @@ import streamlit as st
 import fitz
 import google.generativeai as genai
 
-# アプリの基本設定
 st.set_page_config(page_title="試験対策アプリ", layout="centered")
 st.title("📱 PDF問題作成ツール")
 
-# APIキーの入力
+# 以前のAPIキーを入力してください
 api_key = st.sidebar.text_input("Gemini API Keyを入力", type="password")
 
 if api_key:
     try:
-        # APIの初期設定
         genai.configure(api_key=api_key)
         
-        # 【重要】最も安定している旧モデル名を直接指定
-        model = genai.GenerativeModel('gemini-pro')
+        # 【重要】無料枠で最も確実に動くフルネーム指定に変更
+        model = genai.GenerativeModel(model_name="models/gemini-1.5-flash-latest")
         
         uploaded_file = st.file_uploader("試験の資料(PDF)を選択", type="pdf")
 
         if uploaded_file:
             if st.button("問題を5問作成する"):
-                with st.spinner("PDFを解析中..."):
-                    # PDF読み込み
+                with st.spinner("PDFを読み込み中..."):
                     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-                    text_list = []
-                    for page in doc:
-                        text_list.append(page.get_text())
-                    full_text = "\n".join(text_list)
+                    full_text = "".join([page.get_text() for page in doc])
                 
-                # AIへの指示（プロンプト）
-                prompt = f"以下のテキストの内容から、3択のクイズを5問作成してください。最後に正解を一覧で表示してください。\n\n資料テキスト:\n{full_text[:3000]}"
+                prompt = f"以下のテキストから3択問題を5問作り、最後に正解を書いてください。\n\n{full_text[:5000]}"
                 
-                with st.spinner("AIが問題を生成中..."):
-                    # 生成の実行
+                with st.spinner("AIが考え中..."):
+                    # 安全に生成を実行
                     response = model.generate_content(prompt)
+                    st.markdown("### 📝 作成された問題")
+                    st.write(response.text)
                     
-                    if response.text:
-                        st.markdown("### 📝 作成された問題")
-                        st.write(response.text)
-                    else:
-                        st.error("AIからの返答が空でした。もう一度お試しください。")
-
     except Exception as e:
-        # エラーが出た場合に原因を表示
-        st.error(f"動作エラーが発生しました: {e}")
+        # 404が出る場合はここに理由が表示されます
+        st.error(f"エラーが発生しました。APIキーまたはモデル設定を確認してください：\n{e}")
 else:
-    st.info("左側のサイドメニューからAPIキーを入力してください。")
+    st.info("左側のメニューにAPIキーを入力してください。")
