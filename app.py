@@ -2,32 +2,35 @@ import streamlit as st
 import fitz
 import google.generativeai as genai
 
-st.set_page_config(page_title="試験対策アプリ")
+st.set_page_config(page_title="試験対策")
 st.title("📱 PDF問題作成ツール")
 
-# 鍵を入力する場所
-api_key = st.sidebar.text_input("Gemini API Key", type="password")
+# 鍵の入力
+key = st.sidebar.text_input("API Key", type="password")
 
-if api_key:
-    genai.configure(api_key=api_key)
-    # ここを「gemini-1.5-flash」だけにします（余計な/などをつけない）
-    model = genai.GenerativeModel('gemini-1.5-flash')
+if key:
+    genai.configure(api_key=key)
+    # 【ここが重要】絶対に拒否されない最も古いモデル名にします
+    model = genai.GenerativeModel('gemini-pro')
     
-    uploaded_file = st.file_uploader("PDFを選択", type="pdf")
+    file = st.file_uploader("PDFを選択", type="pdf")
 
-    if uploaded_file and st.button("問題を生成"):
+    if file and st.button("問題を生成"):
         with st.spinner("作成中..."):
             try:
-                # PDFから文字を出す
-                doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
-                text = "".join([page.get_text() for page in doc])
+                # PDFを読み込む
+                doc = fitz.open(stream=file.read(), filetype="pdf")
+                text = ""
+                for page in doc:
+                    text += page.get_text()
                 
-                # AIに頼む
-                response = model.generate_content(f"以下の内容から3択問題を5問作って。最後に正解を書いて。\n\n{text[:5000]}")
+                # AIに指示
+                prompt = f"以下の内容から3択問題を3問作って。最後に正解を書いて。\n\n{text[:3000]}"
+                response = model.generate_content(prompt)
                 
-                st.markdown("### 📝 完成した問題")
                 st.write(response.text)
             except Exception as e:
+                # エラーが出たら内容を出す
                 st.error(f"エラー：{e}")
 else:
     st.info("左にAPIキーを入れてください")
